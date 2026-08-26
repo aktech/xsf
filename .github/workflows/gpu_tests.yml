@@ -83,3 +83,33 @@ jobs:
           AWS_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT }}
           AWS_DEFAULT_REGION: auto
         run: aws s3 ls --recursive --human-readable s3://scipy-cirun-github-actions-cache/xsf/
+
+  # Simulates a fork PR on a cirun on-prem runner: no S3 inputs from repo
+  # secrets; the runner environment carries the credentials instead.
+  restore_with_env_creds:
+    name: Restore via runner env creds
+    runs-on: ubuntu-latest
+    needs: cupy_tests
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+      AWS_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT }}
+    steps:
+      - name: Checkout xsf repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Restore pixi environment (env creds only, no save)
+        uses: cirunlabs/cache/s3-restore@0d5005be5be8cb3f20e624125e3fca0dc68eb384 # v5.0.5-cirun.1
+        with:
+          path: .pixi
+          key: gpu-pixi-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pixi.lock', '.github/workflows/gpu_tests.yml') }}
+          restore-keys: gpu-pixi-${{ runner.os }}-${{ runner.arch }}-
+          s3-bucket: scipy-cirun-github-actions-cache
+          s3-region: auto
+          s3-prefix: xsf
+          s3-ttl-days: 0
+
+      - name: Show restored env size
+        run: du -sh .pixi
