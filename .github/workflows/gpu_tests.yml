@@ -73,3 +73,11 @@ jobs:
 
       - name: Show pixi env size
         run: du -sh .pixi
+
+      - name: Show cache archive sizes in R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT }}
+          AWS_DEFAULT_REGION: auto
+        run: aws s3 ls --recursive --human-readable s3://scipy-cirun-github-actions-cache/xsf/
